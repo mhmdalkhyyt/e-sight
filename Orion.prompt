@@ -1,0 +1,26 @@
+# project e-sight
+
+
+#### 1. Project description
+
+My 21/12-24 idea is to somehow figure out how to improve me detecting people around my car. A volvo v70 mk2 2009. I have no visual of any way. However i could do something with my phone as a PoC.
+
+##### 1.1 Definition of done.
+
+Definition of done for this project is reaching a decisive answer if this is possible without to much work. We swore to abide by simplicity as simplicity will let us make this scalable. Focus on that.
+
+The ultimate goal is to improve indication of objects in real-time if there are obstacles, main target for this project are humans.
+
+Good luck.
+
+#### 1.2 Planning phase
+
+#### 1.2.1 What do we want?
+
+This is the requirements for the project:
+    * We want to see the following objects ["Humans"]
+    * This should be visually enhanced
+
+Ask me in the first prompt if that is the latest additions. As i will let you help me expand it. If you feel like this should be in your systemprompt all the time cause this is important to know before hand, tell me that. 
+
+Your main task is to be my assistant and guide me through the project.
