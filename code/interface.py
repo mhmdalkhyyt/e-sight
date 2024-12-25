@@ -2,6 +2,7 @@
 """
 NeoPixel LED control module
 Author: Tony DiCola (original), enhanced for modularity and performance.
+<<<<<<< HEAD
 =======
 # NeoPixel library strandtest example
 # Author: Tony DiCola (tony@tonydicola.com)
@@ -9,6 +10,8 @@ Author: Tony DiCola (original), enhanced for modularity and performance.
 # Direct port of the Arduino NeoPixel library strandtest example.
 # Showcases various animations on a strip of NeoPixels.
 >>>>>>> d05cce7 (adding lofi and hifi mock-up)
+=======
+>>>>>>> 382b558 (working addressable module for light)
 
 This module allows lighting specific LEDs on a strip with neighbors dimly lit,
 using command-line arguments for LED selection and wait time configuration.
@@ -17,6 +20,9 @@ using command-line arguments for LED selection and wait time configuration.
 import sys
 import time
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 382b558 (working addressable module for light)
 import signal
 from rpi_ws281x import Color, Adafruit_NeoPixel
 
@@ -119,3 +125,7 @@ if __name__ == "__main__":
 
     print(f"Lighting LED {led_idx} with neighbors for {wait_sec} seconds...")
     light_led_with_neighbors(strip, led_idx, wait_sec)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 382b558 (working addressable module for light)
