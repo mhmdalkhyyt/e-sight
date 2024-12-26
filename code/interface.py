@@ -2,7 +2,6 @@
 """
 NeoPixel LED control module
 Author: Tony DiCola (original), enhanced for modularity and performance.
-=======
 # NeoPixel library strandtest example
 # Author: Tony DiCola (tony@tonydicola.com)
 #
@@ -15,10 +14,6 @@ using command-line arguments for LED selection and wait time configuration.
 
 import sys
 import time
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 382b558 (working addressable module for light)
 import signal
 from rpi_ws281x import Color, Adafruit_NeoPixel
 
