@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  yolov8_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"  # Map container port 8000 to host port 8000 (if needed)
+    volumes:
+      - ./data:/app/data  # Bind mount for sharing data between host and container
+    ipc: host  # Share IPC namespace
+    environment:
+      - YOLO_ENV_VAR=value  # Set any required environment variables
+
