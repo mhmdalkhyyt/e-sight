@@ -4,7 +4,7 @@
 docker rm -f yolov8_container || true
 
 # Delete old image (if it exists)
-docker rmi custom_yolov8_image || true
+docker rmi -f custom_yolov8_image || true
 
 # Build the new Docker image
 echo "Building Docker image: custom_yolov8_image"
