@@ -27,7 +27,12 @@ def control_led_strip(index, duration):
         index (int): Index of the LED to light up (0-59).
         duration (int): Duration to light the LED in seconds.
     """
-    subprocess.run(["sudo", "python", "interface.py", str(index), str(duration)])
+
+    print("trying...")
+    if (subprocess.run(["sudo", "python", "interface.py", str(index), str(duration)])):
+        print("sucess!")
+    else:
+        print("failed :(")
 
 # Loop through the video frames
 frame_count = 0
@@ -47,11 +52,13 @@ while cap.isOpened():
             if cls in allowed_class_ids:  # Check if class ID is allowed
                 x1, y1, x2, y2 = box.xyxy[0].tolist()  # Bounding box coordinates
                 center_x = (x1 + x2) / 2  # Horizontal center of the bounding box
+                print(f"firing on {center_x}")
                 led_index = int(center_x / frame_width * 59)  # Map to LED index range
                 print(f"Class ID={cls}, Bounding Box Center X={center_x}, LED Index={led_index}")
 
                 # Light up the corresponding LED
                 control_led_strip(led_index, 1)
+                rint("moved along..")
 
         # Save the annotated frame to the results directory
         frame_filename = os.path.join(output_dir, f"frame_{frame_count:04d}.jpg")
