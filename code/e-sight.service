@@ -1,0 +1,19 @@
+[Unit]
+Description=E-sight Human Detection System
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi/e-sight/code
+ExecStart=/home/pi/e-sight/code/venv/bin/python3 /home/pi/e-sight/code/detection.py
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables (optional)
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target

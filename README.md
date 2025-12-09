@@ -1,23 +1,218 @@
+# E-sight 🚗💡
+
+**Real-time human detection system for enhanced car safety**
+
+A lightweight, camera-based object detection system that uses YOLO to detect humans around your car and displays their position on a 60-LED addressable strip. Built for Raspberry Pi with simplicity and scalability in mind.
+
 ---
-title: Project e-sight
-by: Muhammed Al Khayyat
-date: 2024-12-21
-output: pdf_document
+
+## 🎯 Project Overview
+
+E-sight improves driver awareness by detecting pedestrians around your vehicle and indicating their position using an LED strip mounted as a heads-up display (HUD). The system runs entirely on a Raspberry Pi, making it affordable and easy to install in any vehicle.
+
+### Key Features
+
+- ✅ **Real-time human detection** using YOLO11/YOLOv8
+- ✅ **Visual position indicator** via 60-LED addressable strip
+- ✅ **Test mode** - runs without hardware for development/testing
+- ✅ **Lightweight & fast** - optimized for Raspberry Pi 5
+- ✅ **Auto-start on boot** - systemd service included
+- ✅ **Configurable** - YAML-based configuration
+- ✅ **Safety features** - confidence thresholds, edge detection filtering
+
+### Demo
+
+When a person is detected:
+1. Camera captures the scene
+2. YOLO model identifies humans
+3. LED strip lights up at corresponding horizontal position
+4. Neighboring LEDs dimly lit for better visibility
+5. Non-blocking operation maintains real-time performance
+
 ---
 
-# Project e-sight
+## 🔧 Quick Start
 
-## 1. Project description
+### Prerequisites
+- Raspberry Pi 5 (or Pi 4/3B+)
+- USB webcam or Pi Camera Module
+- Luxor addressable LED strip (60 LEDs, WS281x compatible)
+- Raspberry Pi OS (64-bit recommended)
 
-### 1.1 Objective
+### Installation
 
-The main idea is to improve the ability to detect people around my car using a camera-based object detection system. The focus will be on humans. The Head-Up Display (HUD) will now be an addressable LED strip from Luxor, with a length of 1m and 60 LEDs. A camera will also be installed onboard.
+```bash
+# Clone the repository
+git clone https://github.com/mhmdalkhyyt/e-sight.git
+cd e-sight/code
 
-Improve the ability to detect people around my car using a camera-based object detection system. Focus on humans. Use a Luxor LED strip (1m, 60 LEDs) for Head-Up Display (HUD).
-### 1.2 Definition of done
+# Run installation script
+chmod +x install.sh
+./install.sh
+```
 
-Definition of done for this project is reaching a decisive answer if this is possible without too much work. We swore to abide by simplicity as simplicity will let us make this scalable. The ultimate goal is to improve indication of objects in real-time if there are obstacles, with the main target for this project being humans.
-Reach a decisive answer if this is possible without too much work. Aim for simplicity for scalability. Goal is to improve indication of objects in real-time, with a main target for this project being humans.
+### Test Without Hardware
+
+```bash
+# Test with webcam in simulation mode
+./test.sh
+
+# Test with video file
+./test.sh /path/to/video.mp4
+```
+
+### Run on Raspberry Pi
+
+```bash
+# Run with hardware (requires sudo for GPIO)
+sudo ./run.sh
+```
+
+📚 **[Full Setup Guide](SETUP.md)** - Complete hardware setup, wiring diagrams, and troubleshooting
+
+---
+
+## 📋 Hardware Requirements
+
+| Component | Specification |
+|-----------|--------------|
+| **Computer** | Raspberry Pi 5 (recommended) or Pi 4/3B+ |
+| **Camera** | USB webcam or Raspberry Pi Camera Module |
+| **LED Strip** | 1m, 60 LEDs, WS281x addressable (Luxor) |
+| **Power** | 5V 3A for Pi + external 5V PSU for LED strip |
+| **Cables** | Jumper wires for GPIO connection |
+
+---
+
+## 🎛️ Configuration
+
+Edit `code/config.yaml` to customize:
+
+```yaml
+detection:
+  confidence_threshold: 0.5  # Detection sensitivity
+  target_classes: [0]        # 0 = person in COCO dataset
+
+camera:
+  source: 0       # Camera index or video file path
+  width: 640      # Resolution (lower = faster)
+  height: 480
+
+led:
+  count: 60       # Number of LEDs
+  brightness: 5   # 0-255 (keep low for driving safety)
+  duration: 0.5   # LED on-time in seconds
+
+performance:
+  frame_skip: 0   # Skip frames for better FPS on slower Pis
+  show_fps: true  # Display performance metrics
+```
+
+---
+
+## 📖 Usage
+
+### Command Line Options
+
+```bash
+# Test mode (simulation, no hardware)
+python3 detection.py --test
+
+# Production mode with debug output
+sudo python3 detection.py --debug
+
+# Use video file instead of camera
+python3 detection.py --test --video /path/to/video.mp4
+
+# Custom config file
+python3 detection.py --config my_config.yaml
+```
+
+### Test Individual Components
+
+```bash
+# Test LED strip
+sudo python3 interface.py 30 2  # Light LED 30 for 2 seconds
+
+# Test LED simulator
+python3 led_simulator.py
+
+# Test camera
+python3 -c "import cv2; cap = cv2.VideoCapture(0); print('✅' if cap.read()[0] else '❌')"
+```
+
+### Auto-Start on Boot
+
+```bash
+# Enable service
+sudo systemctl enable e-sight
+sudo systemctl start e-sight
+
+# View logs
+sudo journalctl -u e-sight -f
+```
+
+---
+
+## 📁 Project Structure
+
+```
+e-sight/
+├── code/
+│   ├── detection.py        # Main detection system
+│   ├── interface.py        # LED control (hardware)
+│   ├── led_simulator.py    # LED simulation (testing)
+│   ├── config.yaml         # Configuration file
+│   ├── requirements.txt    # Python dependencies
+│   ├── install.sh          # Installation script
+│   ├── test.sh            # Test mode launcher
+│   ├── run.sh             # Production launcher
+│   └── e-sight.service    # Systemd service file
+├── docs/                  # Documentation
+├── README.md             # This file
+└── SETUP.md             # Complete setup guide
+```
+
+---
+
+## 🚀 Performance
+
+Expected frame rates:
+
+| Hardware | Resolution | FPS |
+|----------|-----------|-----|
+| Raspberry Pi 5 | 640x480 | 15-25 |
+| Raspberry Pi 4 | 640x480 | 10-15 |
+| Raspberry Pi 3B+ | 640x480 | 5-10 |
+
+💡 For real-time performance (>15 FPS), Raspberry Pi 5 is recommended.
+
+---
+
+## ✨ What's Fixed/Improved
+
+This implementation fixes several issues from the original version:
+
+### Critical Bug Fixes
+- ✅ **Correct class ID**: Changed from `[1]` (bicycle) to `[0]` (person)
+- ✅ **Fixed typo**: `rint` → `print`
+- ✅ **Proper error handling**: subprocess calls now validate correctly
+
+### New Features
+- ✅ **Test mode**: Simulate LED strip without hardware
+- ✅ **Configuration system**: Easy YAML-based settings
+- ✅ **Non-blocking LED control**: Threading prevents detection slowdown
+- ✅ **FPS counter**: Monitor real-time performance
+- ✅ **Safety filters**: Edge margin and confidence thresholds
+- ✅ **Auto-start service**: systemd integration
+
+### Performance Optimizations
+- ✅ **Removed frame saving**: No unnecessary disk I/O
+- ✅ **Frame skipping option**: Better FPS on slower devices
+- ✅ **Lower resolution support**: Configurable for performance
+- ✅ **Removed Docker overhead**: Direct execution on Pi
+
+---
 
 ## 2. Project Phases
 

@@ -1,0 +1,50 @@
+# E-sight Configuration File
+# Configuration for car safety detection system
+
+# Operating Mode
+mode:
+  test: false  # Set to true for simulation mode (no hardware required)
+  debug: false  # Enable debug logging
+
+# Camera Settings
+camera:
+  source: 0  # 0 for USB camera, or path to video file for testing
+  width: 640  # Lower resolution = faster processing
+  height: 480
+  fps: 30
+
+# Detection Settings
+detection:
+  model_path: "yolo11n.torchscript"
+  confidence_threshold: 0.5  # Minimum confidence to consider detection valid
+  target_classes: [0]  # 0 = person in COCO dataset
+  max_distance: 10.0  # Maximum distance to consider (meters, if depth available)
+
+# LED Strip Settings
+led:
+  count: 60  # Number of LEDs in strip
+  pin: 18  # GPIO pin (BCM numbering)
+  brightness: 5  # 0-255, keep low for safety while driving
+  frequency: 800000  # LED signal frequency (Hz)
+  dma: 10  # DMA channel
+  invert: false
+  channel: 0
+  duration: 0.5  # How long LED stays lit (seconds)
+  
+# LED Colors (RGB)
+colors:
+  target: [12, 24, 244]  # Blue for detected person
+  neighbor: [0, 255, 0]  # Green for neighboring LEDs
+  neighbor_dimming: 0.5  # Factor to dim neighboring LEDs
+
+# Performance Settings
+performance:
+  frame_skip: 0  # Process every Nth frame (0 = process all)
+  save_frames: false  # Save annotated frames (slows down processing)
+  output_dir: "results"
+  show_fps: true
+
+# Safety Settings
+safety:
+  min_detection_area: 1000  # Minimum bounding box area (pixels²)
+  edge_margin: 0.1  # Ignore detections within 10% of frame edges

@@ -2,20 +2,30 @@
 """
 NeoPixel LED control module
 Author: Tony DiCola (original), enhanced for modularity and performance.
-# NeoPixel library strandtest example
-# Author: Tony DiCola (tony@tonydicola.com)
-#
-# Direct port of the Arduino NeoPixel library strandtest example.
-# Showcases various animations on a strip of NeoPixels.
 
 This module allows lighting specific LEDs on a strip with neighbors dimly lit,
 using command-line arguments for LED selection and wait time configuration.
+
+This is kept for backwards compatibility. For the main system, use detection.py
 """
 
 import sys
 import time
 import signal
-from rpi_ws281x import Color, Adafruit_NeoPixel
+
+try:
+    from rpi_ws281x import Color, Adafruit_NeoPixel
+    HARDWARE_AVAILABLE = True
+except ImportError:
+    print("⚠️  rpi_ws281x not available. Install it or use test mode.")
+    print("Install with: sudo pip install rpi-ws281x")
+    HARDWARE_AVAILABLE = False
+    # Create dummy classes for non-Pi environments
+    def Color(r, g, b):
+        return (r << 16) | (g << 8) | b
+    class Adafruit_NeoPixel:
+        def __init__(self, *args, **kwargs):
+            pass
 
 # LED strip configuration:
 LED_COUNT = 60  # Number of LED pixels
@@ -88,31 +98,51 @@ def signal_handler(sig, frame):
 
 
 if __name__ == "__main__":
+    # Check hardware availability
+    if not HARDWARE_AVAILABLE:
+        print("❌ Cannot run on this system - rpi_ws281x library not available")
+        print("This script requires a Raspberry Pi with GPIO access")
+        print("For testing without hardware, use: python detection.py --test")
+        sys.exit(1)
+    
     # Attach signal handler for Ctrl-C
     signal.signal(signal.SIGINT, signal_handler)
 
-    # Create and initialize the NeoPixel object
-    strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
-    strip.begin()
-
-    # Parse command-line arguments
+    # Parse command-line arguments first
     if len(sys.argv) < 2:
         print("Usage: python interface.py <LED_INDEX> [WAIT_TIME]")
+        print("Example: sudo python interface.py 30 2")
         sys.exit(1)
 
     try:
         led_idx = int(sys.argv[1])
         if not (0 <= led_idx < LED_COUNT):
-            raise ValueError("LED index out of range.")
+            raise ValueError(f"LED index must be between 0 and {LED_COUNT-1}")
 
         # Get optional wait time, default to DEFAULT_WAIT_TIME
         wait_sec = float(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_WAIT_TIME
         if wait_sec <= 0:
-            raise ValueError("Wait time must be greater than 0.")
+            raise ValueError("Wait time must be greater than 0")
 
     except ValueError as e:
-        print(f"Error: {e}")
+        print(f"❌ Error: {e}")
         sys.exit(1)
 
-    print(f"Lighting LED {led_idx} with neighbors for {wait_sec} seconds...")
-    light_led_with_neighbors(strip, led_idx, wait_sec)
+    # Create and initialize the NeoPixel object
+    try:
+        strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
+        strip.begin()
+        print(f"✅ LED strip initialized")
+    except Exception as e:
+        print(f"❌ Failed to initialize LED strip: {e}")
+        print("Make sure you run this script with sudo:")
+        print("  sudo python interface.py <LED_INDEX> [WAIT_TIME]")
+        sys.exit(1)
+
+    print(f"🔵 Lighting LED {led_idx} with neighbors for {wait_sec} seconds...")
+    try:
+        light_led_with_neighbors(strip, led_idx, wait_sec)
+        print("✅ Done!")
+    except Exception as e:
+        print(f"❌ Error during LED control: {e}")
+        sys.exit(1)

@@ -1,6 +1,13 @@
-numpy
-torch
-opencv-python-headless
-picamera2
-ultralytics
-rpi-ws281x
+# E-sight Core Dependencies
+numpy>=1.24.0
+opencv-python>=4.8.0
+torch>=2.0.0
+ultralytics>=8.0.0
+PyYAML>=6.0
+
+# Raspberry Pi Hardware (only needed on Pi)
+# Install with: sudo pip install rpi-ws281x
+# rpi-ws281x>=5.0.0
+
+# Optional: For Raspberry Pi camera support
+# picamera2>=0.3.0
