@@ -1,30 +1,20 @@
-# Use the base image
+# E-sight container for Raspberry Pi 3B+ (needs a 64-bit Raspberry Pi OS)
+# Build and run with: docker compose up -d --build
 FROM ultralytics/ultralytics:latest-arm64
 
-# Install dependencies to create a virtual environment
-RUN apt-get update && apt-get install -y python3.11-venv
+# Build tools for the rpi_ws281x C extension
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
 WORKDIR /app
 
-# Copy your Python scripts into the container
-COPY detection.py interface.py /app/
+# torch, ultralytics and OpenCV already ship in the base image
+RUN pip install --no-cache-dir "PyYAML>=6.0" "rpi-ws281x>=5.0.0"
 
-# Copy the requirements file into the container
-COPY requirements.txt /app/
+# detection.py imports led_simulator for Color/dim_color even on real hardware
+COPY detection.py interface.py led_simulator.py config.yaml yolo11n.torchscript /app/
 
-#RUN apt install libgl1 -y
+ENV PYTHONUNBUFFERED=1
 
-
-# Create a virtual environment and activate it
-RUN python3 -m venv /app/venv \
-    && . /app/venv/bin/activate \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir setuptools==65.5.1 PiDNG
-
-# Expose port if needed
-EXPOSE 8000
-
-# Set the command to run your main script
-#CMD ["python", "detection.py"]
-
+CMD ["python3", "detection.py"]
