@@ -160,7 +160,8 @@ sudo journalctl -u e-sight -f
 e-sight/
 ├── code/
 │   ├── detection.py        # Main detection system
-│   ├── interface.py        # LED control (hardware)
+│   ├── led_display.py      # LED strip driver used by detection.py
+│   ├── interface.py        # Standalone LED test tool (hardware)
 │   ├── led_simulator.py    # LED simulation (testing)
 │   ├── config.yaml         # Configuration file
 │   ├── requirements.txt    # Python dependencies
@@ -196,7 +197,7 @@ This implementation fixes several issues from the original version:
 ### Critical Bug Fixes
 - ✅ **Correct class ID**: Changed from `[1]` (bicycle) to `[0]` (person)
 - ✅ **Fixed typo**: `rint` → `print`
-- ✅ **Proper error handling**: subprocess calls now validate correctly
+- ✅ **In-process LED control**: the strip is opened once; repeated LED failures stop the system with an error instead of being ignored
 
 ### New Features
 - ✅ **Test mode**: Simulate LED strip without hardware

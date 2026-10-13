@@ -11,14 +11,9 @@ import yaml
 import time
 import argparse
 from pathlib import Path
-from threading import Thread, Lock
-from queue import Queue
 from ultralytics import YOLO
 
-# LED control - import appropriate module based on mode
-led_controller = None
-led_queue = Queue()
-led_lock = Lock()
+from led_display import LEDDisplay, LEDError
 
 
 class FPSCounter:
@@ -88,8 +83,6 @@ def create_default_config() -> dict:
 
 def init_led_controller(config: dict, test_mode: bool):
     """Initialize LED controller (real or simulated)"""
-    global led_controller
-    
     if test_mode:
         # Use simulator
         from led_simulator import LEDSimulator
@@ -99,10 +92,11 @@ def init_led_controller(config: dict, test_mode: bool):
         )
         led_controller.begin()
         print("✅ LED Simulator initialized")
+        return led_controller
     else:
         # Use real hardware
         try:
-            from rpi_ws281x import Color, Adafruit_NeoPixel
+            from rpi_ws281x import Adafruit_NeoPixel
             led_controller = Adafruit_NeoPixel(
                 config['led']['count'],
                 config['led']['pin'],
@@ -114,6 +108,7 @@ def init_led_controller(config: dict, test_mode: bool):
             )
             led_controller.begin()
             print("✅ Hardware LED strip initialized")
+            return led_controller
         except ImportError:
             print("❌ rpi_ws281x not available. Install it or use --test mode")
             sys.exit(1)
@@ -121,73 +116,6 @@ def init_led_controller(config: dict, test_mode: bool):
             print(f"❌ Failed to initialize LED hardware: {e}")
             print("Try running with sudo or check GPIO permissions")
             sys.exit(1)
-
-
-def led_worker(config: dict, test_mode: bool):
-    """Background worker to handle LED updates without blocking detection"""
-    from led_simulator import Color, dim_color
-    
-    target_color = tuple(config['colors']['target'])
-    neighbor_color = tuple(config['colors']['neighbor'])
-    dimming = config['colors']['neighbor_dimming']
-    duration = config['led']['duration']
-    led_count = config['led']['count']
-    
-    while True:
-        led_idx = led_queue.get()
-        if led_idx is None:  # Shutdown signal
-            break
-        
-        try:
-            with led_lock:
-                # Calculate dimmed neighbor color
-                dimmed = dim_color(neighbor_color, dimming)
-                
-                # Light up target LED
-                led_controller.setPixelColor(led_idx, Color(*target_color))
-                
-                # Light up neighbors
-                if led_idx > 0:
-                    led_controller.setPixelColor(led_idx - 1, Color(*dimmed))
-                if led_idx < led_count - 1:
-                    led_controller.setPixelColor(led_idx + 1, Color(*dimmed))
-                
-                led_controller.show()
-                time.sleep(duration)
-                
-                # Turn off LEDs
-                led_controller.setPixelColor(led_idx, Color(0, 0, 0))
-                if led_idx > 0:
-                    led_controller.setPixelColor(led_idx - 1, Color(0, 0, 0))
-                if led_idx < led_count - 1:
-                    led_controller.setPixelColor(led_idx + 1, Color(0, 0, 0))
-                
-                led_controller.show()
-        except Exception as e:
-            if config['mode']['debug']:
-                print(f"\n❌ LED error: {e}")
-
-
-def control_led_strip(led_idx: int, frame_width: int, config: dict):
-    """
-    Queue LED update (non-blocking)
-    
-    Args:
-        led_idx: LED index to light up
-        frame_width: Width of camera frame
-        config: Configuration dict
-    """
-    # Validate LED index
-    if not (0 <= led_idx < config['led']['count']):
-        if config['mode']['debug']:
-            print(f"\n⚠️  LED index {led_idx} out of range")
-        return
-    
-    # Add to queue for background worker
-    led_queue.put(led_idx)
-    
-    if config['mode']['debug']:
-        print(f"\n🔵 Queued LED {led_idx}")
 
 
 def is_valid_detection(box, frame_width: int, frame_height: int, config: dict) -> bool:
@@ -260,11 +188,8 @@ def main():
     print("=" * 80)
     
     # Initialize LED controller
-    init_led_controller(config, test_mode)
-    
-    # Start LED worker thread
-    led_thread = Thread(target=led_worker, args=(config, test_mode), daemon=True)
-    led_thread.start()
+    led_display = LEDDisplay(init_led_controller(config, test_mode), config)
+    led_display.start()
     
     # Load YOLO model
     print("\n📦 Loading YOLO model...")
@@ -303,6 +228,7 @@ def main():
     frame_count = 0
     allowed_classes = set(config['detection']['target_classes'])
     frame_skip = config['performance']['frame_skip']
+    exit_code = 0
     
     print("\n🎯 Starting detection... (Press Ctrl+C to stop)")
     print("-" * 80)
@@ -325,6 +251,7 @@ def main():
             
             # Process detections
             detections_found = 0
+            led_indices = []
             for box in results[0].boxes:
                 cls = int(box.cls[0])
                 
@@ -347,8 +274,10 @@ def main():
                     if debug_mode:
                         print(f"\n👤 Person detected at x={center_x:.1f} (conf={conf:.2f}) → LED {led_idx}")
                     
-                    # Control LED strip
-                    control_led_strip(led_idx, frame_width, config)
+                    led_indices.append(led_idx)
+            
+            # Show this frame's detections on the LED strip
+            led_display.update(led_indices)
             
             # Update FPS
             fps = fps_counter.update()
@@ -371,26 +300,20 @@ def main():
     except KeyboardInterrupt:
         print("\n\n🛑 Stopping detection...")
     
+    except LEDError as e:
+        print(f"\n\n❌ {e}")
+        exit_code = 1
+    
     finally:
         # Cleanup
         print("\n🧹 Cleaning up...")
         cap.release()
-        led_queue.put(None)  # Signal LED worker to stop
-        led_thread.join(timeout=2)
-        
-        # Turn off all LEDs
-        if led_controller:
-            with led_lock:
-                for i in range(config['led']['count']):
-                    if test_mode:
-                        from led_simulator import Color
-                    else:
-                        from rpi_ws281x import Color
-                    led_controller.setPixelColor(i, Color(0, 0, 0))
-                led_controller.show()
+        led_display.stop()
         
         print("✅ Shutdown complete")
         print(f"📊 Total frames processed: {frame_count}")
+    
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
