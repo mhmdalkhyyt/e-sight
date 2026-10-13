@@ -8,7 +8,7 @@ import math
 model = YOLO("yolo11n.torchscript")
 
 # Specify the class IDs you want to detect
-allowed_class_ids = [1]  # Replace with the class IDs you want to detect
+allowed_class_ids = [0]  # COCO class 0 is "person"
 
 # Open the USB camera (0 is the default camera)
 cap = cv2.VideoCapture(0)
@@ -29,8 +29,9 @@ def control_led_strip(index, duration):
     """
 
     print("trying...")
-    if (subprocess.run(["sudo", "python", "interface.py", str(index), str(duration)])):
-        print("sucess!")
+    result = subprocess.run(["sudo", "python", "interface.py", str(index), str(duration)])
+    if result.returncode == 0:
+        print("success!")
     else:
         print("failed :(")
 
@@ -58,7 +59,7 @@ while cap.isOpened():
 
                 # Light up the corresponding LED
                 control_led_strip(led_index, 1)
-                rint("moved along..")
+                print("moved along..")
 
         # Save the annotated frame to the results directory
         frame_filename = os.path.join(output_dir, f"frame_{frame_count:04d}.jpg")
