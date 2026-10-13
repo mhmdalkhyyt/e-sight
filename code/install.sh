@@ -40,19 +40,6 @@ sudo apt-get install -y \
     python3-pip \
     python3-venv \
     python3-dev \
-    libopencv-dev \
-    libatlas-base-dev \
-    libjpeg-dev \
-    libtiff5-dev \
-    libpng-dev \
-    libavcodec-dev \
-    libavformat-dev \
-    libswscale-dev \
-    libv4l-dev \
-    libxvidcore-dev \
-    libx264-dev \
-    libgtk-3-dev \
-    libcanberra-gtk3-module \
     git
 
 echo "✅ System dependencies installed"
@@ -81,6 +68,8 @@ echo ""
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
+# --no-deps: ncnn would otherwise pull in the GUI build of opencv-python
+pip install --no-deps "ncnn>=1.0.20240410"
 echo "✅ Python dependencies installed"
 echo ""
 
@@ -107,18 +96,10 @@ echo "🔍 Checking for YOLO model..."
 if [ ! -d "yolo11n_320_ncnn_model" ]; then
     echo "⚠️  YOLO model not found!"
     echo "The model folder 'yolo11n_320_ncnn_model' is required."
-    echo ""
-    read -p "Download and export YOLO11n now? (y/n) " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "📥 Downloading and exporting YOLO11n..."
-        python3 << 'EOF'
-from ultralytics import YOLO
-YOLO('yolo11n.pt').export(format='ncnn', imgsz=320)
-EOF
-        mv yolo11n_ncnn_model yolo11n_320_ncnn_model
-        echo "✅ Model exported to yolo11n_320_ncnn_model"
-    fi
+    echo "It ships with the repository. To recreate it, run on a PC:"
+    echo "  pip install -r requirements-ultralytics.txt"
+    echo "  yolo export model=yolo11n.pt format=ncnn imgsz=320"
+    echo "then copy yolo11n_ncnn_model/ here as yolo11n_320_ncnn_model/"
 else
     echo "✅ YOLO model found"
 fi

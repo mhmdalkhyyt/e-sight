@@ -7,6 +7,9 @@
 - Camera defaults lowered to 320x240 at 10 fps, and `safety.min_detection_area` scaled down to 250 to match.
 - Detection always runs on the newest camera frame (`code/camera.py`). Previously the camera driver buffered frames while the model was busy, so detections could be seconds old.
 - Class and confidence filtering now happen inside the model's NMS step instead of in Python afterwards.
+- PyTorch and Ultralytics are no longer needed on the Pi. `code/detector.py` runs the NCNN model with the ncnn runtime and does its own letterboxing and NMS (`detection.backend: ncnn`, the default). Peak memory of the detection process dropped from about 1.1 GB to about 155 MB in testing. The Ultralytics path is still available with `detection.backend: ultralytics` and `requirements-ultralytics.txt`.
+- `requirements.txt` uses `opencv-python-headless`; `install.sh` no longer installs GTK, codec and OpenCV development packages. Install ncnn with `pip install --no-deps ncnn` (its declared dependencies pull in the GUI OpenCV build).
+- New `detection.threads` setting (default 3) leaves one CPU core free for the camera, LEDs and the OS.
 - LED strip rendering moved to `code/led_display.py`. The detection loop now publishes each frame's positions and the strip shows the current scene; previously every detection was queued and held for `led.duration`, so the strip fell further behind the camera whenever people were in view.
 - LED errors are always reported. After 3 consecutive failed updates detection stops and exits with status 1 (previously errors were only printed in debug mode).
 

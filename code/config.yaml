@@ -15,8 +15,10 @@ camera:
 
 # Detection Settings
 detection:
+  backend: "ncnn"  # "ncnn" (no PyTorch needed) or "ultralytics" (any model format, needs requirements-ultralytics.txt)
   model_path: "yolo11n_320_ncnn_model"  # NCNN is the fastest format on Raspberry Pi
   imgsz: 320  # Must match the size the model was exported at
+  threads: 3  # CPU threads for inference; leaves one core for camera, LEDs and the OS
   confidence_threshold: 0.5  # Minimum confidence to consider detection valid
   target_classes: [0]  # 0 = person in COCO dataset
   max_distance: 10.0  # Maximum distance to consider (meters, if depth available)
