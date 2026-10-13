@@ -78,15 +78,15 @@ If you prefer manual installation or need to troubleshoot:
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Install system dependencies
-sudo apt-get install -y python3-pip python3-venv python3-dev \
-    libopencv-dev libatlas-base-dev git
+sudo apt-get install -y python3-pip python3-venv python3-dev git
 
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install Python packages
+# Install Python packages (no PyTorch needed)
 pip install -r requirements.txt
+pip install --no-deps "ncnn>=1.0.20240410"
 
 # Install hardware support (on Raspberry Pi only)
 sudo pip install rpi-ws281x
@@ -333,7 +333,7 @@ python3 -c "import cv2; cap = cv2.VideoCapture(0); ret, frame = cap.read(); prin
 
 **Problem**: "ModuleNotFoundError"
 - Activate virtual environment: `source venv/bin/activate`
-- Reinstall dependencies: `pip install -r requirements.txt`
+- Reinstall dependencies: `pip install -r requirements.txt` and `pip install --no-deps ncnn`
 
 **Problem**: "Permission denied" when accessing GPIO
 - Run with sudo: `sudo python3 detection.py`

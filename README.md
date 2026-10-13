@@ -161,11 +161,13 @@ e-sight/
 ├── code/
 │   ├── detection.py        # Main detection system
 │   ├── camera.py           # Latest-frame camera capture
+│   ├── detector.py         # YOLO inference (ncnn runtime, no PyTorch)
 │   ├── led_display.py      # LED strip driver used by detection.py
 │   ├── interface.py        # Standalone LED test tool (hardware)
 │   ├── led_simulator.py    # LED simulation (testing)
 │   ├── config.yaml         # Configuration file
-│   ├── requirements.txt    # Python dependencies
+│   ├── requirements.txt    # Python dependencies (no PyTorch)
+│   ├── requirements-ultralytics.txt  # Optional: PyTorch/Ultralytics backend
 │   ├── install.sh          # Installation script
 │   ├── test.sh            # Test mode launcher
 │   ├── run.sh             # Production launcher
@@ -181,7 +183,9 @@ e-sight/
 
 The default model is YOLO11n exported to NCNN at 320x320 (`code/yolo11n_320_ncnn_model`). Compared with the previous 640x640 TorchScript model it needs about 4x less compute per frame; on a 4-core test machine it ran about 3.5x faster (74 ms vs 21 ms per frame). These numbers have not been measured on a Raspberry Pi yet: run with `show_fps: true` to see the real frame rate on your hardware.
 
-To use a different model or size, export it with Ultralytics on a PC and copy the folder to the Pi:
+The Pi runs the model with the ncnn runtime directly, so PyTorch and Ultralytics are not installed there. In a test run the whole detection process peaked at about 155 MB of memory, compared with about 1.1 GB through PyTorch + Ultralytics on the same machine.
+
+To use a different model or size, export it with Ultralytics on a PC (`pip install -r requirements-ultralytics.txt`) and copy the folder to the Pi:
 
 ```bash
 yolo export model=yolo11n.pt format=ncnn imgsz=320

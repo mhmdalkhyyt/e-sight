@@ -1,10 +1,13 @@
 # E-sight Core Dependencies
+# Runs the NCNN model directly; no PyTorch needed on the Pi
 numpy>=1.24.0
-opencv-python>=4.8.0
-torch>=2.0.0
-ultralytics>=8.3.0
-ncnn>=1.0.20240410
+opencv-python-headless>=4.8.0
 PyYAML>=6.0
+
+# Also install the ncnn runtime WITHOUT its dependencies:
+#   pip install --no-deps "ncnn>=1.0.20240410"
+# Its declared dependencies include the GUI build of opencv-python, which
+# needs X11/OpenGL libraries and clashes with opencv-python-headless.
 
 # Raspberry Pi Hardware (only needed on Pi)
 # Install with: sudo pip install rpi-ws281x
@@ -12,3 +15,6 @@ PyYAML>=6.0
 
 # Optional: For Raspberry Pi camera support
 # picamera2>=0.3.0
+
+# Optional: detection.backend "ultralytics" (other model formats, exporting
+# models) needs requirements-ultralytics.txt. Not recommended on a Pi 3B+.

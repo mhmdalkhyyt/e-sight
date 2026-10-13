@@ -1,0 +1,5 @@
+# Optional: only for detection.backend "ultralytics" or for exporting models.
+# Pulls in PyTorch (>1 GB installed); use on a PC, not on a Pi 3B+.
+-r requirements.txt
+torch>=2.0.0
+ultralytics>=8.3.0

@@ -11,9 +11,9 @@ import yaml
 import time
 import argparse
 from pathlib import Path
-from ultralytics import YOLO
 
 from camera import LatestFrameCamera
+from detector import create_detector, draw_detections
 from led_display import LEDDisplay, LEDError
 
 
@@ -56,8 +56,10 @@ def create_default_config() -> dict:
         'mode': {'test': False, 'debug': False},
         'camera': {'source': 0, 'width': 320, 'height': 240, 'fps': 10},
         'detection': {
+            'backend': 'ncnn',
             'model_path': 'yolo11n_320_ncnn_model',
             'imgsz': 320,
+            'threads': 3,
             'confidence_threshold': 0.5,
             'target_classes': [0],  # person class
             'max_distance': 10.0
@@ -195,7 +197,7 @@ def main():
     # Load YOLO model
     print("\n📦 Loading YOLO model...")
     try:
-        model = YOLO(config['detection']['model_path'], task='detect')
+        detector = create_detector(config)
         print("✅ Model loaded successfully")
     except Exception as e:
         print(f"❌ Failed to load model: {e}")
@@ -228,9 +230,6 @@ def main():
     # FPS counter
     fps_counter = FPSCounter()
     frame_count = 0
-    target_classes = list(config['detection']['target_classes'])
-    confidence_threshold = config['detection']['confidence_threshold']
-    imgsz = config['detection'].get('imgsz', 320)
     frame_skip = config['performance']['frame_skip']
     exit_code = 0
     
@@ -251,14 +250,12 @@ def main():
                 continue
             
             # Run YOLO inference (class and confidence filtering happen inside NMS)
-            results = model(frame, imgsz=imgsz, conf=confidence_threshold,
-                            classes=target_classes, verbose=False)
+            detections = detector.detect(frame)
             
-            # Process detections (one tensor-to-list conversion per frame)
-            boxes = results[0].boxes
+            # Process detections
             detections_found = 0
             led_indices = []
-            for (x1, y1, x2, y2), conf in zip(boxes.xyxy.tolist(), boxes.conf.tolist()):
+            for x1, y1, x2, y2, conf in detections:
                 # Validate detection
                 if not is_valid_detection(x1, y1, x2, y2, conf, frame_width, frame_height, config):
                     continue
@@ -286,7 +283,7 @@ def main():
             
             # Save frame if enabled
             if config['performance']['save_frames']:
-                annotated_frame = results[0].plot()
+                annotated_frame = draw_detections(frame, detections)
                 frame_filename = os.path.join(
                     config['performance']['output_dir'],
                     f"frame_{frame_count:04d}.jpg"
