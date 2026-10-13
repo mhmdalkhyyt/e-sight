@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- LED strip rendering moved to `code/led_display.py`. The detection loop now publishes each frame's positions and the strip shows the current scene; previously every detection was queued and held for `led.duration`, so the strip fell further behind the camera whenever people were in view.
+- LED errors are always reported. After 3 consecutive failed updates detection stops and exits with status 1 (previously errors were only printed in debug mode).
+
 ## [2.0.0] - 2024-12-09
 
 ### 🎉 Major Overhaul - Project Revitalization
