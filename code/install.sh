@@ -104,25 +104,20 @@ fi
 
 # Check if YOLO model exists
 echo "🔍 Checking for YOLO model..."
-if [ ! -f "yolo11n.torchscript" ]; then
+if [ ! -d "yolo11n_320_ncnn_model" ]; then
     echo "⚠️  YOLO model not found!"
-    echo "The model file 'yolo11n.torchscript' is required."
+    echo "The model folder 'yolo11n_320_ncnn_model' is required."
     echo ""
-    echo "Options:"
-    echo "1. Download a pre-trained YOLO model"
-    echo "2. Export your own model using Ultralytics"
-    echo ""
-    read -p "Download YOLOv8n model now? (y/n) " -n 1 -r
+    read -p "Download and export YOLO11n now? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "📥 Downloading YOLOv8n model..."
+        echo "📥 Downloading and exporting YOLO11n..."
         python3 << 'EOF'
 from ultralytics import YOLO
-model = YOLO('yolov8n.pt')
-model.export(format='torchscript')
-print("✅ Model exported to yolov8n.torchscript")
-print("Rename it to yolo11n.torchscript or update config.yaml")
+YOLO('yolo11n.pt').export(format='ncnn', imgsz=320)
 EOF
+        mv yolo11n_ncnn_model yolo11n_320_ncnn_model
+        echo "✅ Model exported to yolo11n_320_ncnn_model"
     fi
 else
     echo "✅ YOLO model found"

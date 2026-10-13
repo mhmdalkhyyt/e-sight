@@ -160,13 +160,14 @@ mode:
 # Camera Settings
 camera:
   source: 0          # 0 for USB camera, or path to video file
-  width: 640         # Lower = faster processing
-  height: 480
-  fps: 30
+  width: 320         # Match the model input size
+  height: 240
+  fps: 10            # The Pi can't process more than this
 
 # Detection Settings
 detection:
-  model_path: "yolo11n.torchscript"
+  model_path: "yolo11n_320_ncnn_model"
+  imgsz: 320                   # Must match the exported model
   confidence_threshold: 0.5    # Higher = fewer false positives
   target_classes: [0]          # 0 = person
 
@@ -185,7 +186,7 @@ colors:
 
 # Performance
 performance:
-  frame_skip: 0      # Process every Nth frame (0 = all frames)
+  frame_skip: 0      # Skip N frames between detections (0 = none)
   save_frames: false # Save annotated frames (for debugging)
   show_fps: true     # Display FPS counter
 ```
@@ -194,7 +195,8 @@ performance:
 
 - **confidence_threshold**: Lower values (0.3-0.5) detect more objects but with more false positives. Higher values (0.6-0.8) are more selective.
 - **brightness**: Keep low (5-20) to avoid distraction while driving. Test in dark conditions.
-- **frame_skip**: Set to 1-2 on slower Pis to improve FPS (processes every 2nd or 3rd frame).
+- **frame_skip**: Leaves the CPU idle between detections (e.g. to run cooler). It does not make each detection faster.
+- **model_path / imgsz**: The model's input size is fixed when it is exported. Changing the camera resolution does not change how much work the model does; export a smaller model instead (see README, Performance).
 
 ---
 
@@ -316,14 +318,14 @@ python3 -c "import cv2; cap = cv2.VideoCapture(0); ret, frame = cap.read(); prin
 ### Performance Issues
 
 **Problem**: Low FPS (<5 FPS)
-- Lower camera resolution in config.yaml (try 320x240)
-- Enable frame skipping: `frame_skip: 1` or `2`
-- Use lighter YOLO model (YOLOv8n instead of YOLOv11)
+- Make sure `model_path` points at the NCNN model, not a `.torchscript` or `.pt` file
+- Export a smaller model: `yolo export model=yolo11n.pt format=ncnn imgsz=256` and set `imgsz: 256`
+- Check for throttling: `vcgencmd get_throttled` should print `throttled=0x0`
 - Close other running applications
 
 **Problem**: High CPU temperature
 - Add heatsink or fan to Raspberry Pi
-- Lower FPS: `fps: 15` in config.yaml
+- Enable frame skipping to leave the CPU idle between detections
 - Enable frame skipping
 - Consider using motion sensor to trigger detection only when needed
 
@@ -338,7 +340,7 @@ python3 -c "import cv2; cap = cv2.VideoCapture(0); ret, frame = cap.read(); prin
 - Add user to gpio group: `sudo usermod -a -G gpio $USER` (logout required)
 
 **Problem**: Model not found
-- Check if `yolo11n.torchscript` exists in code directory
+- Check that the `yolo11n_320_ncnn_model` folder exists in the code directory
 - Download model: See installation instructions
 - Update path in config.yaml
 
@@ -353,16 +355,9 @@ If issues persist:
 
 ## Performance Benchmarks
 
-Expected FPS on different hardware:
+No measurements on Raspberry Pi hardware yet. Run with `show_fps: true` and note the result here.
 
-| Hardware | Resolution | FPS (approx) |
-|----------|-----------|--------------|
-| Raspberry Pi 5 | 640x480 | 15-25 FPS |
-| Raspberry Pi 4 | 640x480 | 10-15 FPS |
-| Raspberry Pi 3B+ | 640x480 | 5-10 FPS |
-| Raspberry Pi 3B+ | 320x240 | 10-15 FPS |
-
-> 💡 Tip: For real-time performance (>15 FPS), Raspberry Pi 5 is highly recommended.
+On a 4-core x86 test machine, per frame: YOLO11n TorchScript 640x640 took 74 ms, NCNN 320x320 took 21 ms. Expect a Pi 3B+ to be many times slower than that machine.
 
 ---
 

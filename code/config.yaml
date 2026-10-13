@@ -9,13 +9,14 @@ mode:
 # Camera Settings
 camera:
   source: 0  # 0 for USB camera, or path to video file for testing
-  width: 640  # Lower resolution = faster processing
-  height: 480
-  fps: 30
+  width: 320  # Match the model input size; larger frames are only scaled down again
+  height: 240
+  fps: 10  # The Pi can't process more than this; capturing faster only wastes CPU
 
 # Detection Settings
 detection:
-  model_path: "yolo11n.torchscript"
+  model_path: "yolo11n_320_ncnn_model"  # NCNN is the fastest format on Raspberry Pi
+  imgsz: 320  # Must match the size the model was exported at
   confidence_threshold: 0.5  # Minimum confidence to consider detection valid
   target_classes: [0]  # 0 = person in COCO dataset
   max_distance: 10.0  # Maximum distance to consider (meters, if depth available)
@@ -39,12 +40,12 @@ colors:
 
 # Performance Settings
 performance:
-  frame_skip: 0  # Process every Nth frame (0 = process all)
+  frame_skip: 0  # Skip N frames between detections (0 = detect on every frame); the camera always delivers the newest frame
   save_frames: false  # Save annotated frames (slows down processing)
   output_dir: "results"
   show_fps: true
 
 # Safety Settings
 safety:
-  min_detection_area: 1000  # Minimum bounding box area (pixels²)
+  min_detection_area: 250  # Minimum bounding box area (pixels² at the camera resolution above)
   edge_margin: 0.1  # Ignore detections within 10% of frame edges

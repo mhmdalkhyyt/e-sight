@@ -95,8 +95,8 @@ detection:
 
 camera:
   source: 0       # Camera index or video file path
-  width: 640      # Resolution (lower = faster)
-  height: 480
+  width: 320      # Match the model input size
+  height: 240
 
 led:
   count: 60       # Number of LEDs
@@ -104,7 +104,7 @@ led:
   duration: 0.5   # LED on-time in seconds
 
 performance:
-  frame_skip: 0   # Skip frames for better FPS on slower Pis
+  frame_skip: 0   # Skip N frames between detections
   show_fps: true  # Display performance metrics
 ```
 
@@ -160,6 +160,7 @@ sudo journalctl -u e-sight -f
 e-sight/
 ├── code/
 │   ├── detection.py        # Main detection system
+│   ├── camera.py           # Latest-frame camera capture
 │   ├── led_display.py      # LED strip driver used by detection.py
 │   ├── interface.py        # Standalone LED test tool (hardware)
 │   ├── led_simulator.py    # LED simulation (testing)
@@ -178,15 +179,15 @@ e-sight/
 
 ## 🚀 Performance
 
-Expected frame rates:
+The default model is YOLO11n exported to NCNN at 320x320 (`code/yolo11n_320_ncnn_model`). Compared with the previous 640x640 TorchScript model it needs about 4x less compute per frame; on a 4-core test machine it ran about 3.5x faster (74 ms vs 21 ms per frame). These numbers have not been measured on a Raspberry Pi yet: run with `show_fps: true` to see the real frame rate on your hardware.
 
-| Hardware | Resolution | FPS |
-|----------|-----------|-----|
-| Raspberry Pi 5 | 640x480 | 15-25 |
-| Raspberry Pi 4 | 640x480 | 10-15 |
-| Raspberry Pi 3B+ | 640x480 | 5-10 |
+To use a different model or size, export it with Ultralytics on a PC and copy the folder to the Pi:
 
-💡 For real-time performance (>15 FPS), Raspberry Pi 5 is recommended.
+```bash
+yolo export model=yolo11n.pt format=ncnn imgsz=320
+```
+
+Then set `detection.model_path` and `detection.imgsz` in `config.yaml` to match.
 
 ---
 
@@ -211,6 +212,8 @@ This implementation fixes several issues from the original version:
 - ✅ **Removed frame saving**: No unnecessary disk I/O
 - ✅ **Frame skipping option**: Better FPS on slower devices
 - ✅ **Lower resolution support**: Configurable for performance
+- ✅ **NCNN model at 320x320**: Fastest model format on Raspberry Pi
+- ✅ **Latest-frame capture**: Detection always runs on the newest camera frame, never on a stale buffered one
 - ✅ **Removed Docker overhead**: Direct execution on Pi
 
 ---

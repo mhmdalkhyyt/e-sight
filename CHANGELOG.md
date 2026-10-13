@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Changed
+- Default model is now YOLO11n exported to NCNN at 320x320 (`code/yolo11n_320_ncnn_model`), about 4x less compute per frame than the 640x640 TorchScript model, and the fastest format on Raspberry Pi. New `detection.imgsz` setting.
+- Camera defaults lowered to 320x240 at 10 fps, and `safety.min_detection_area` scaled down to 250 to match.
+- Detection always runs on the newest camera frame (`code/camera.py`). Previously the camera driver buffered frames while the model was busy, so detections could be seconds old.
+- Class and confidence filtering now happen inside the model's NMS step instead of in Python afterwards.
 - LED strip rendering moved to `code/led_display.py`. The detection loop now publishes each frame's positions and the strip shows the current scene; previously every detection was queued and held for `led.duration`, so the strip fell further behind the camera whenever people were in view.
 - LED errors are always reported. After 3 consecutive failed updates detection stops and exits with status 1 (previously errors were only printed in debug mode).
 
