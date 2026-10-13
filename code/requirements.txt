@@ -2,7 +2,8 @@
 numpy>=1.24.0
 opencv-python>=4.8.0
 torch>=2.0.0
-ultralytics>=8.0.0
+ultralytics>=8.3.0
+ncnn>=1.0.20240410
 PyYAML>=6.0
 
 # Raspberry Pi Hardware (only needed on Pi)

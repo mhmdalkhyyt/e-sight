@@ -13,6 +13,7 @@ import argparse
 from pathlib import Path
 from ultralytics import YOLO
 
+from camera import LatestFrameCamera
 from led_display import LEDDisplay, LEDError
 
 
@@ -53,9 +54,10 @@ def create_default_config() -> dict:
     """Create default configuration"""
     return {
         'mode': {'test': False, 'debug': False},
-        'camera': {'source': 0, 'width': 640, 'height': 480, 'fps': 30},
+        'camera': {'source': 0, 'width': 320, 'height': 240, 'fps': 10},
         'detection': {
-            'model_path': 'yolo11n.torchscript',
+            'model_path': 'yolo11n_320_ncnn_model',
+            'imgsz': 320,
             'confidence_threshold': 0.5,
             'target_classes': [0],  # person class
             'max_distance': 10.0
@@ -75,7 +77,7 @@ def create_default_config() -> dict:
             'output_dir': 'results', 'show_fps': True
         },
         'safety': {
-            'min_detection_area': 1000,
+            'min_detection_area': 250,
             'edge_margin': 0.1
         }
     }
@@ -118,12 +120,14 @@ def init_led_controller(config: dict, test_mode: bool):
             sys.exit(1)
 
 
-def is_valid_detection(box, frame_width: int, frame_height: int, config: dict) -> bool:
+def is_valid_detection(x1: float, y1: float, x2: float, y2: float, conf: float,
+                       frame_width: int, frame_height: int, config: dict) -> bool:
     """
     Check if detection meets safety criteria
     
     Args:
-        box: YOLO detection box
+        x1, y1, x2, y2: Bounding box corners in frame pixels
+        conf: Detection confidence
         frame_width: Frame width
         frame_height: Frame height
         config: Configuration dict
@@ -131,8 +135,6 @@ def is_valid_detection(box, frame_width: int, frame_height: int, config: dict) -
     Returns:
         True if detection is valid
     """
-    x1, y1, x2, y2 = box.xyxy[0].tolist()
-    
     # Check minimum area
     area = (x2 - x1) * (y2 - y1)
     if area < config['safety']['min_detection_area']:
@@ -148,7 +150,6 @@ def is_valid_detection(box, frame_width: int, frame_height: int, config: dict) -
         return False
     
     # Check confidence
-    conf = float(box.conf[0])
     if conf < config['detection']['confidence_threshold']:
         return False
     
@@ -194,7 +195,7 @@ def main():
     # Load YOLO model
     print("\n📦 Loading YOLO model...")
     try:
-        model = YOLO(config['detection']['model_path'])
+        model = YOLO(config['detection']['model_path'], task='detect')
         print("✅ Model loaded successfully")
     except Exception as e:
         print(f"❌ Failed to load model: {e}")
@@ -202,20 +203,21 @@ def main():
     
     # Open camera
     print("\n📹 Initializing camera...")
-    cap = cv2.VideoCapture(config['camera']['source'])
+    cap = LatestFrameCamera(
+        config['camera']['source'],
+        config['camera']['width'],
+        config['camera']['height'],
+        config['camera']['fps']
+    )
     
     if not cap.isOpened():
         print(f"❌ Failed to open camera: {config['camera']['source']}")
         sys.exit(1)
     
-    # Set camera properties
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, config['camera']['width'])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config['camera']['height'])
-    cap.set(cv2.CAP_PROP_FPS, config['camera']['fps'])
-    
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     print(f"✅ Camera ready: {frame_width}x{frame_height}")
+    cap.start()
     
     # Setup output directory if needed
     if config['performance']['save_frames']:
@@ -226,7 +228,9 @@ def main():
     # FPS counter
     fps_counter = FPSCounter()
     frame_count = 0
-    allowed_classes = set(config['detection']['target_classes'])
+    target_classes = list(config['detection']['target_classes'])
+    confidence_threshold = config['detection']['confidence_threshold']
+    imgsz = config['detection'].get('imgsz', 320)
     frame_skip = config['performance']['frame_skip']
     exit_code = 0
     
@@ -246,35 +250,29 @@ def main():
                 frame_count += 1
                 continue
             
-            # Run YOLO inference
-            results = model(frame, verbose=False)
+            # Run YOLO inference (class and confidence filtering happen inside NMS)
+            results = model(frame, imgsz=imgsz, conf=confidence_threshold,
+                            classes=target_classes, verbose=False)
             
-            # Process detections
+            # Process detections (one tensor-to-list conversion per frame)
+            boxes = results[0].boxes
             detections_found = 0
             led_indices = []
-            for box in results[0].boxes:
-                cls = int(box.cls[0])
+            for (x1, y1, x2, y2), conf in zip(boxes.xyxy.tolist(), boxes.conf.tolist()):
+                # Validate detection
+                if not is_valid_detection(x1, y1, x2, y2, conf, frame_width, frame_height, config):
+                    continue
                 
-                # Check if class is in allowed list (person = 0)
-                if cls in allowed_classes:
-                    # Validate detection
-                    if not is_valid_detection(box, frame_width, frame_height, config):
-                        continue
-                    
-                    detections_found += 1
-                    
-                    # Get bounding box coordinates
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
-                    center_x = (x1 + x2) / 2
-                    conf = float(box.conf[0])
-                    
-                    # Map to LED index (0-59)
-                    led_idx = int(center_x / frame_width * (config['led']['count'] - 1))
-                    
-                    if debug_mode:
-                        print(f"\n👤 Person detected at x={center_x:.1f} (conf={conf:.2f}) → LED {led_idx}")
-                    
-                    led_indices.append(led_idx)
+                detections_found += 1
+                center_x = (x1 + x2) / 2
+                
+                # Map to LED index (0-59)
+                led_idx = int(center_x / frame_width * (config['led']['count'] - 1))
+                
+                if debug_mode:
+                    print(f"\n👤 Person detected at x={center_x:.1f} (conf={conf:.2f}) → LED {led_idx}")
+                
+                led_indices.append(led_idx)
             
             # Show this frame's detections on the LED strip
             led_display.update(led_indices)
