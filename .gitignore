@@ -43,7 +43,3 @@ logs/
 .Orion_prompt.txt
 Orion.prompt
 
-# Docker (deprecated)
-code/Dockerfile
-code/docker-compose.yml
-code/start.sh

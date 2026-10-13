@@ -1,16 +1,9 @@
 #!/bin/bash
+# Build the image and (re)start the e-sight container with camera and LED access.
+# See docker-compose.yml for the device mappings.
 
-# Delete old container (if it exists)
-docker rm -f yolov8_container || true
+set -e
+cd "$(dirname "$0")"
 
-# Delete old image (if it exists)
-docker rmi -f custom_yolov8_image || true
-
-# Build the new Docker image
-echo "Building Docker image: custom_yolov8_image"
-docker build -t custom_yolov8_image .
-
-# Run the new container
-echo "Starting container: yolov8_container"
-docker run -d --name yolov8_container -p 8000:8000 custom_yolov8_image
-
+docker compose up -d --build
+docker compose logs -f

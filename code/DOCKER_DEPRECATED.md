@@ -1,8 +1,17 @@
-# Docker Support Deprecated
+# Docker Support
 
-⚠️ **Docker support has been removed in favor of native execution on Raspberry Pi.**
+Native execution on the Pi (`./install.sh`, then `sudo ./run.sh`) is still the recommended setup.
 
-## Why?
+If you prefer a container, `docker-compose.yml` runs `detection.py` with the camera (`/dev/video0`)
+and the LED strip (privileged mode, `/dev/mem`, `/dev/vcio`) passed through. It needs a 64-bit
+Raspberry Pi OS because the base image is `ultralytics/ultralytics:latest-arm64`:
+
+```bash
+cd code
+./start.sh   # docker compose up -d --build, then follows the logs
+```
+
+## Why native is preferred
 
 Docker adds unnecessary overhead on Raspberry Pi:
 - **Performance**: Direct execution is 20-30% faster

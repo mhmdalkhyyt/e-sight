@@ -1,17 +1,18 @@
-version: '3.8'
-
 services:
-  yolov8_service:
+  e-sight:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"  # Map container port 8000 to host port 8000 (if needed)
+    image: e-sight
+    container_name: e-sight
+    restart: unless-stopped
+    # rpi_ws281x drives GPIO18 through PWM + DMA, which needs raw access to
+    # /dev/mem, the VideoCore mailbox and /proc/device-tree on the host
+    privileged: true
+    devices:
+      - /dev/video0:/dev/video0  # camera (config.yaml camera.source: 0)
+      - /dev/mem:/dev/mem        # PWM/DMA registers for the LED strip
+      - /dev/vcio:/dev/vcio      # VideoCore mailbox used by rpi_ws281x
     volumes:
-      - ./data:/app/data  # Bind mount for sharing data between host and container
-      - ./interface.py:./interface.py
-      - ./detection.py:./detection.py
-    ipc: host  # Share IPC namespace
-    environment:
-      - YOLO_ENV_VAR=value  # Set any required environment variables
-
+      - ./config.yaml:/app/config.yaml:ro  # edit settings without rebuilding
+      - ./results:/app/results             # saved frames when save_frames is on
