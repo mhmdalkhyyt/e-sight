@@ -45,6 +45,7 @@ class LEDSimulator:
             # Unpack color from integer format (compatibility with Color())
             r = (color >> 16) & 0xFF
             g = (color >> 8) & 0xFF
+            
             b = color & 0xFF
             self.pixels[index] = (r, g, b)
     

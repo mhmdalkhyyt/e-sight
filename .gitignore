@@ -1,8 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
 
-# Ignore environment variables
+# Environment variables
 .env
 .env.*
 
-# Ignore Python virtual environment directory
-venv/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
+# Project specific
+code/results/
+code/*.jpg
+code/*.png
+*.pt
+*.onnx
+*.torchscript
+!code/yolo11n.torchscript
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Deprecated
+.Orion_prompt.txt
+Orion.prompt
+
+# Docker (deprecated)
+code/Dockerfile
+code/docker-compose.yml
+code/start.sh
